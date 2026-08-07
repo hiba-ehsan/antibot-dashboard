@@ -1,45 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createSupabaseClient } from "./supabase";
+import { proxyFetch } from "./api";
 import type { TelemetryRow } from "@/components/TelemetryTable";
 
-export function useTelemetry(limit = 50) {
+// Telemetry is read through the authenticated proxy API (GET /api/v1/telemetry),
+// which scopes rows to the signed-in user server-side. Never query request_logs
+// directly from the client — RLS alone is easy to misconfigure and leaks other
+// users' data.
+export function useTelemetry(limit = 50, refreshMs = 5000) {
   const [rows, setRows] = useState<TelemetryRow[]>([]);
 
   useEffect(() => {
-    const supabase = createSupabaseClient();
-    let mounted = true;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-    supabase
-      .from("request_logs")
-      .select("*")
-      .order("timestamp_epoch_ms", { ascending: false })
-      .limit(limit)
-      .then(({ data, error }) => {
-        if (!error && data && mounted) {
-          setRows(data as TelemetryRow[]);
-        }
-      });
+    const load = async () => {
+      try {
+        const data = await proxyFetch<TelemetryRow[]>(
+          `/api/v1/telemetry?limit=${limit}`,
+        );
+        if (!cancelled) setRows(Array.isArray(data) ? data : []);
+      } catch {
+        // transient failure — keep the last known data
+      } finally {
+        if (!cancelled) timer = setTimeout(load, refreshMs);
+      }
+    };
 
-    const channel = supabase
-      .channel("public:request_logs")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "request_logs" },
-        (payload) => {
-          if (!mounted) return;
-          const row = payload.new as TelemetryRow;
-          setRows((prev) => [row, ...prev].slice(0, limit));
-        },
-      )
-      .subscribe();
+    load();
 
     return () => {
-      mounted = false;
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (timer) clearTimeout(timer);
     };
-  }, [limit]);
+  }, [limit, refreshMs]);
 
   return { rows };
 }

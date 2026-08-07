@@ -3,7 +3,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase";
-import { getSession } from "@/lib/auth";
 import TopNav from "@/components/TopNav";
 import {
   SocketStatusProvider,
@@ -18,24 +17,38 @@ function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    getSession().then((session) => {
-      if (!mounted) return;
-      if (!session) {
-        router.replace("/login");
-        return;
-      }
-      setEmail(session.user.email ?? null);
-      setChecked(true);
-    });
-
     const supabase = createSupabaseClient();
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (mounted && (event === "SIGNED_OUT" || (!session && event === "INITIAL_SESSION"))) {
+        if (!mounted) return;
+
+        if (event === "INITIAL_SESSION") {
+          // The client has finished restoring the session from storage.
+          if (!session) {
+            router.replace("/login");
+            return;
+          }
+          setEmail(session.user.email ?? null);
+          setChecked(true);
+          return;
+        }
+
+        if (event === "SIGNED_OUT") {
           router.replace("/login");
         }
       },
     );
+
+    // getSession() can resolve to null before the client restores the session;
+    // the INITIAL_SESSION event above covers that case.
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      if (data.session) {
+        setEmail(data.session.user.email ?? null);
+        setChecked(true);
+      }
+    });
 
     // Lightweight socket-status probe channel
     const channel = supabase

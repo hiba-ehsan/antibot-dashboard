@@ -79,3 +79,39 @@ export async function getSession() {
   const { data } = await supabase.auth.getSession();
   return data.session;
 }
+
+// getSession() can resolve to null before the supabase client finishes
+// restoring the session from storage on a fresh page load. This waits for the
+// client to finish so authenticated API calls always send a bearer token.
+export async function getAccessToken(timeoutMs = 4000): Promise<string | null> {
+  const supabase = createSupabaseClient();
+
+  const { data } = await supabase.auth.getSession();
+  if (data.session?.access_token) {
+    return data.session.access_token;
+  }
+
+  return new Promise<string | null>((resolve) => {
+    let done = false;
+    let sub: { unsubscribe: () => void } | undefined;
+
+    const finish = (token: string | null) => {
+      if (done) return;
+      done = true;
+      sub?.unsubscribe();
+      resolve(token);
+    };
+
+    sub = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        event === "INITIAL_SESSION" ||
+        event === "SIGNED_IN" ||
+        event === "TOKEN_REFRESHED"
+      ) {
+        finish(session?.access_token ?? null);
+      }
+    }).data.subscription;
+
+    setTimeout(() => finish(null), timeoutMs);
+  });
+}
