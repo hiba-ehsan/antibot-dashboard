@@ -35,7 +35,7 @@ export default function TopNav({ email, socketStatus }: TopNavProps) {
                 Anti-Bot
               </p>
               <p className="text-[8px] text-[#676a79] font-mono tracking-[0.22em] mt-1">
-                COMMAND CENTER
+                DASHBOARD
               </p>
             </div>
           </Link>

@@ -4,18 +4,47 @@ import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { deleteSession, listSessions, startSession, updateSession, type ScraperSession } from "@/lib/scrapers";
 import {
+  proxyUrl,
   pythonSnippet,
   nodeSnippet,
   curlSnippet,
   playwrightSnippet,
 } from "@/lib/snippets";
-import { Plus, Copy, Check, X, Network, Loader2, ExternalLink, Trash2, Pencil } from "lucide-react";
+import { Plus, Copy, Check, X, Network, Loader2, ExternalLink, Trash2, Pencil, ChevronDown, Key } from "lucide-react";
 
 const SNIPPETS = [
   { id: "python", label: "Python", render: pythonSnippet },
   { id: "node", label: "Node.js", render: nodeSnippet },
   { id: "curl", label: "cURL", render: curlSnippet },
   { id: "playwright", label: "Playwright", render: playwrightSnippet },
+];
+
+const SDK_SNIPPETS = [
+  {
+    id: "setup",
+    label: "Setup",
+    code: `npm install @hiba-ehsan/antibot-scraper-sdk`,
+  },
+  {
+    id: "env",
+    label: "Env var",
+    code: `export ANTIBOT_AGENT_KEY="your-key-here"`,
+  },
+  {
+    id: "usage",
+    label: "Usage",
+    code: `import { AntiBotClient } from "@hiba-ehsan/antibot-scraper-sdk";
+
+const client = new AntiBotClient({
+  targetDomain: "example.com",
+  name: "my-scraper",
+});
+
+const session = await client.initializeSession();
+const proxy = client.getPlaywrightProxy();
+
+// Pass \`proxy\` to Chromium.launch() and you're good to go.`,
+  },
 ];
 
 function timeAgo(iso: string): string {
@@ -36,16 +65,21 @@ function ConnectModal({
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState<string | null>(null);
-  const [tab, setTab] = useState("python");
+  const [mode, setMode] = useState<"quick" | "sdk">("quick");
+  const [snippetTab, setSnippetTab] = useState("python");
+  const [examplesOpen, setExamplesOpen] = useState(false);
+  const [sdkTab, setSdkTab] = useState("setup");
 
   if (!session) return null;
-  const active = SNIPPETS.find((s) => s.id === tab)!;
+  const active = SNIPPETS.find((s) => s.id === snippetTab)!;
 
   const copy = async (code: string, id: string) => {
     await navigator.clipboard.writeText(code);
     setCopied(id);
     setTimeout(() => setCopied(null), 1500);
   };
+
+  const url = proxyUrl(session.id);
 
   return (
     <motion.div
@@ -66,11 +100,11 @@ function ConnectModal({
         <div className="flex items-start justify-between mb-5">
           <div>
             <p className="font-mono text-[10px] tracking-[0.3em] text-[#676a79] mb-1">
-              CONNECT SCRAPER
+              CONNECT TO SCRAPER
             </p>
-            <h2 className="text-lg font-bold silver-text">Session {session.id.slice(0, 8)}</h2>
+            <h2 className="text-lg font-bold silver-text">{session.name || session.target_domain}</h2>
             <p className="text-sm text-[#676a79] mt-0.5">
-              Route your scraper through the proxy with this session ID.
+              Pick how you want to connect.
             </p>
           </div>
           <button
@@ -81,62 +115,157 @@ function ConnectModal({
           </button>
         </div>
 
-        {/* Session token */}
-        <div className="flex items-center gap-2 mb-5 p-3 rounded-xl bg-[#17191d] border border-[#2a2d33]">
-          <Network className="w-4 h-4 text-[#E8E9EE] shrink-0" />
-          <code className="flex-1 font-mono text-xs text-white truncate">
-            {session.id}
-          </code>
+        {/* Mode switcher */}
+        <div className="flex gap-1 mb-5 p-1 rounded-xl bg-[#17191d] border border-[#2a2d33]">
           <button
-            onClick={() => copy(session.id, "token")}
-            className="p-1.5 rounded-lg border border-[#2a2d33] text-[#676a79] hover:text-white hover:border-[#2a2d33] transition-colors"
+            onClick={() => setMode("quick")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono transition-colors ${mode === "quick"
+                ? "bg-[#ceced7] text-black font-semibold"
+                : "text-[#676a79] hover:text-white"
+              }`}
           >
-            {copied === "token" ? (
-              <Check className="w-3.5 h-3.5 text-[#10b981]" />
-            ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
+            <Network className="w-3.5 h-3.5" />
+            Quick Connect
+          </button>
+          <button
+            onClick={() => setMode("sdk")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono transition-colors ${mode === "sdk"
+                ? "bg-[#ceced7] text-black font-semibold"
+                : "text-[#676a79] hover:text-white"
+              }`}
+          >
+            <Key className="w-3.5 h-3.5" />
+            Agent Key
           </button>
         </div>
 
-        {/* Tab bar */}
-        <div className="flex gap-1 mb-3 p-1 rounded-xl bg-[#17191d] border border-[#2a2d33] w-fit">
-          {SNIPPETS.map((s) => (
+        {mode === "quick" ? (
+          <>
+            {/* Proxy URL */}
+            <p className="text-xs text-[#676a79] mb-2">
+              Copy this URL and use it as your proxy.
+            </p>
+            <div className="flex items-center gap-2 mb-5 p-3 rounded-xl bg-[#17191d] border border-[#2a2d33]">
+              <code className="flex-1 font-mono text-xs text-white truncate">
+                {url}
+              </code>
+              <button
+                onClick={() => copy(url, "proxy-url")}
+                className="p-1.5 rounded-lg border border-[#2a2d33] text-[#676a79] hover:text-white hover:border-[#2a2d33] transition-colors shrink-0"
+              >
+                {copied === "proxy-url" ? (
+                  <Check className="w-3.5 h-3.5 text-[#10b981]" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
+
+            {/* Collapsible code examples */}
             <button
-              key={s.id}
-              onClick={() => setTab(s.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${tab === s.id
-                  ? "bg-[#ceced7] text-black"
-                  : "text-[#676a79] hover:text-white"
-                }`}
+              onClick={() => setExamplesOpen(!examplesOpen)}
+              className="flex items-center gap-2 text-xs text-[#676a79] hover:text-white transition-colors mb-3"
             >
-              {s.label}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${examplesOpen ? "rotate-180" : ""}`} />
+              See code examples
             </button>
-          ))}
-        </div>
 
-        {/* Code block */}
-        <div className="relative">
-          <pre className="rounded-xl bg-[#0a0a0b] border border-[#2a2d33] p-4 overflow-x-auto font-mono text-[11px] leading-relaxed text-[#ceced7] max-h-64 overflow-y-auto">
-            {active.render(session.id)}
-          </pre>
-          <button
-            onClick={() => copy(active.render(session.id), active.id)}
-            className="absolute top-3 right-3 p-1.5 rounded-lg border border-[#2a2d33] bg-[#0a0a0b] text-[#676a79] hover:text-white hover:border-[#2a2d33] transition-colors"
-          >
-            {copied === active.id ? (
-              <Check className="w-3.5 h-3.5 text-[#10b981]" />
-            ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
-          </button>
-        </div>
+            <AnimatePresence>
+              {examplesOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex gap-1 mb-3 p-1 rounded-xl bg-[#17191d] border border-[#2a2d33] w-fit">
+                    {SNIPPETS.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => setSnippetTab(s.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${snippetTab === s.id
+                            ? "bg-[#ceced7] text-black"
+                            : "text-[#676a79] hover:text-white"
+                          }`}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
 
-        <p className="mt-4 text-xs text-[#676a79] leading-relaxed">
-          For browser automation (Puppeteer / Playwright), set the proxy to the
-          gateway and pass <code className="text-white">x-session-id</code> as a
-          header instead of the query param.
-        </p>
+                  <div className="relative">
+                    <pre className="rounded-xl bg-[#0a0a0b] border border-[#2a2d33] p-4 overflow-x-auto font-mono text-[11px] leading-relaxed text-[#ceced7] max-h-64 overflow-y-auto">
+                      {active.render(session.id)}
+                    </pre>
+                    <button
+                      onClick={() => copy(active.render(session.id), active.id)}
+                      className="absolute top-3 right-3 p-1.5 rounded-lg border border-[#2a2d33] bg-[#0a0a0b] text-[#676a79] hover:text-white hover:border-[#2a2d33] transition-colors"
+                    >
+                      {copied === active.id ? (
+                        <Check className="w-3.5 h-3.5 text-[#10b981]" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+
+                  <p className="mt-3 text-xs text-[#676a79] leading-relaxed">
+                    Using Playwright or Puppeteer? Pass{" "}
+                    <code className="text-white">x-session-id</code> as a header
+                    instead.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        ) : (
+          <>
+            {/* Agent Key approach */}
+            <p className="text-xs text-[#676a79] mb-4">
+              Set this once and the SDK handles sessions for you automatically.
+            </p>
+
+            <div className="flex gap-1 mb-3 p-1 rounded-xl bg-[#17191d] border border-[#2a2d33] w-fit">
+              {SDK_SNIPPETS.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setSdkTab(s.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${sdkTab === s.id
+                      ? "bg-[#ceced7] text-black"
+                      : "text-[#676a79] hover:text-white"
+                    }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative">
+              <pre className="rounded-xl bg-[#0a0a0b] border border-[#2a2d33] p-4 overflow-x-auto font-mono text-[11px] leading-relaxed text-[#ceced7] max-h-64 overflow-y-auto">
+                {SDK_SNIPPETS.find((s) => s.id === sdkTab)?.code}
+              </pre>
+              <button
+                onClick={() => {
+                  const code = SDK_SNIPPETS.find((s) => s.id === sdkTab)?.code ?? "";
+                  copy(code, `sdk-${sdkTab}`);
+                }}
+                className="absolute top-3 right-3 p-1.5 rounded-lg border border-[#2a2d33] bg-[#0a0a0b] text-[#676a79] hover:text-white hover:border-[#2a2d33] transition-colors"
+              >
+                {copied === `sdk-${sdkTab}` ? (
+                  <Check className="w-3.5 h-3.5 text-[#10b981]" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
+
+            <p className="mt-3 text-xs text-[#676a79] leading-relaxed">
+              The SDK creates a new session each time you call{" "}
+              <code className="text-white">initializeSession()</code> — no need to
+              manage session IDs by hand.
+            </p>
+          </>
+        )}
       </motion.div>
     </motion.div>
   );
@@ -373,13 +502,13 @@ export default function ScrapersPage() {
       <div className="flex items-end justify-between mb-6 flex-wrap gap-4">
         <div>
           <p className="font-mono text-[10px] tracking-[0.3em] text-[#676a79] mb-2">
-            SCRAPER NETWORK
+            SCRAPERS
           </p>
           <h1 className="text-2xl font-bold silver-text tracking-tight">
             Scrapers
           </h1>
           <p className="text-sm text-[#676a79] mt-1">
-            Create sessions and connect your bots to the anti-bot gateway.
+            Start a scraper and route it through the proxy.
           </p>
         </div>
 
@@ -434,12 +563,11 @@ export default function ScrapersPage() {
           <div className="glass-panel p-8 text-center col-span-full">
             <Network className="w-8 h-8 text-[#676a79] mx-auto mb-3" />
             <p className="font-mono text-xs tracking-widest text-[#676a79] mb-1">
-              NO SCRAPERS CONNECTED
+              NO SCRAPERS YET
             </p>
             <p className="text-sm text-[#676a79]">
-              Enter a target domain above and hit{" "}
-              <span className="text-white">New Scraper</span> to generate a
-              session token.
+              Enter a target domain above and click{" "}
+              <span className="text-white">New Scraper</span> to get started.
             </p>
           </div>
         )}

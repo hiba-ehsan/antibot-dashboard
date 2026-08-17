@@ -48,7 +48,7 @@ export default function TelemetryTable({ rows }: TelemetryTableProps) {
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="text-left">
-            {["TIME", "TARGET", "DELTA", "OSINT", "RISK", "ACTION"].map((h) => (
+            {["TIME", "TARGET", "TIMING", "ABUSE", "RISK", "STATUS"].map((h) => (
               <th
                 key={h}
                 className="px-4 py-3 font-mono text-[10px] font-semibold tracking-[0.2em] text-slate-400 border-b border-slate-800"
@@ -67,12 +67,10 @@ export default function TelemetryTable({ rows }: TelemetryTableProps) {
                   className="px-4 py-14 text-center text-slate-500"
                 >
                   <p className="font-mono text-xs tracking-widest mb-1">
-                    AWAITING TELEMETRY
+                    WAITING FOR DATA
                   </p>
                   <p className="text-xs text-slate-500">
-                    Hit{" "}
-                    <code className="text-slate-400 bg-slate-800 px-1 py-0.5 rounded">/api/v1/proxy</code> to
-                    inject live request data
+                    Send a request through the proxy to see it here
                   </p>
                 </td>
               </tr>

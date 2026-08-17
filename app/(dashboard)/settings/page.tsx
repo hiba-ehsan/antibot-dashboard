@@ -34,13 +34,13 @@ export default function SettingsPage() {
     <div className="max-w-[1200px]">
       <div className="mb-6">
         <p className="font-mono text-[10px] tracking-[0.3em] text-[#676a79] mb-2">
-          CONFIGURATION
+          SETTINGS
         </p>
         <h1 className="text-2xl font-bold silver-text tracking-tight">
           Settings
         </h1>
         <p className="text-sm text-[#676a79] mt-1">
-          Profile and service endpoints for this deployment.
+          Your account and service URLs for this deployment.
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2 mb-4">
             <User className="w-4 h-4 text-[#E8E9EE]" />
             <span className="font-mono text-[10px] font-semibold tracking-[0.25em] text-[#676a79]">
-              OPERATOR PROFILE
+              YOUR ACCOUNT
             </span>
           </div>
           <div className="space-y-3">
@@ -83,7 +83,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2 mb-4">
             <Server className="w-4 h-4 text-[#E8E9EE]" />
             <span className="font-mono text-[10px] font-semibold tracking-[0.25em] text-[#676a79]">
-              SERVICE ENDPOINTS
+              SERVICE URLS
             </span>
           </div>
           <div className="space-y-3">
@@ -124,14 +124,14 @@ export default function SettingsPage() {
       {/* Architecture note */}
       <div className="glass-panel p-5 mt-4">
         <p className="font-mono text-[10px] font-semibold tracking-[0.25em] text-[#676a79] mb-3">
-          HOW THE GATEWAY WORKS
+          HOW IT WORKS
         </p>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {[
-            { step: "01", title: "Forward", desc: "Scrapers route traffic through the proxy gateway with a session ID." },
-            { step: "02", title: "Analyze", desc: "Proxy computes timing deltas, checks AbuseIPDB, and scores risk via the ML model." },
-            { step: "03", title: "Throttle", desc: "High-risk requests get an adaptive delay before forwarding to the target." },
-            { step: "04", title: "Log", desc: "Every request is logged to Supabase and streams live to this dashboard." },
+            { step: "01", title: "Forward", desc: "Your scraper sends traffic through the proxy using a session ID." },
+            { step: "02", title: "Analyze", desc: "The proxy checks request timing and IP reputation, then scores the risk." },
+            { step: "03", title: "Throttle", desc: "Risky requests are slowed down before being sent to the target site." },
+            { step: "04", title: "Log", desc: "Every request is saved and shown live on this dashboard." },
           ].map((c) => (
             <div key={c.step} className="rounded-xl bg-[#17191d] border border-[#2a2d33] p-4">
               <p className="font-mono text-xs text-[#E8E9EE] mb-2">({c.step})</p>

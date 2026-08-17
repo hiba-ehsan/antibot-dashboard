@@ -41,7 +41,7 @@ export default function Sidebar({ email, socketStatus, open, onClose }: SidebarP
           {/* Nav */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             <p className="px-3 pb-2 text-[9px] font-mono tracking-[0.28em] text-[#676a79]">
-              OPERATIONS
+              PAGES
             </p>
             {SECTIONS.map(({ num, label, href, icon: Icon }) => {
               const active = isActive(href);
@@ -97,7 +97,7 @@ export default function Sidebar({ email, socketStatus, open, onClose }: SidebarP
           <div className="px-4 py-4 border-t border-[#2a2d33] bg-[#0a0a0b] space-y-3">
             <div className="flex items-center justify-between px-1">
               <span className="text-[9px] font-mono tracking-[0.24em] text-[#676a79]">
-                STREAM
+                STATUS
               </span>
               <div className="flex items-center gap-1.5">
                 <span
@@ -126,7 +126,7 @@ export default function Sidebar({ email, socketStatus, open, onClose }: SidebarP
                   {email ?? "operator"}
                 </p>
                 <p className="text-[9px] text-[#676a79] font-mono tracking-[0.2em] mt-0.5">
-                  OPERATOR // 05
+                  ACCOUNT
                 </p>
               </div>
               <button

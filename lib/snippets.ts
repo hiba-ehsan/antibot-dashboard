@@ -1,14 +1,18 @@
 const PROXY = process.env.NEXT_PUBLIC_PROXY_API_URL ?? "http://localhost:3001";
 
+export function proxyUrl(sessionId: string): string {
+  return `${PROXY}/api/v1/proxy?sessionId=${sessionId}`;
+}
+
 export function pythonSnippet(sessionId: string): string {
   return `import requests
 
-PROXY_ENDPOINT = "${PROXY}/api/v1/proxy"
+proxy_url = "${PROXY}/api/v1/proxy"
 target_url = "https://example.com/data"
 session_id = "${sessionId}"
 
 response = requests.get(
-    PROXY_ENDPOINT,
+    proxy_url,
     params={"url": target_url, "sessionId": session_id},
 )
 
@@ -19,11 +23,11 @@ print(data["risk_score"], data["is_throttled"], data["upstream_status"])`;
 export function nodeSnippet(sessionId: string): string {
   return `import axios from "axios";
 
-const PROXY_ENDPOINT = "${PROXY}/api/v1/proxy";
+const proxy_url = "${PROXY}/api/v1/proxy";
 const target_url = "https://example.com/data";
 const session_id = "${sessionId}";
 
-const { data } = await axios.get(PROXY_ENDPOINT, {
+const { data } = await axios.get(proxy_url, {
   params: { url: target_url, sessionId: session_id },
 });
 

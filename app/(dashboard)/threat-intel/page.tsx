@@ -67,13 +67,13 @@ export default function ThreatIntelPage() {
     <div className="max-w-[1200px]">
       <div className="mb-6">
         <p className="font-mono text-[10px] tracking-[0.3em] text-[#676a79] mb-2">
-          OSINT INTELLIGENCE
+          THREAT LOOKUP
         </p>
         <h1 className="text-2xl font-bold silver-text tracking-tight">
-          Threat Intel
+          Threat Lookup
         </h1>
         <p className="text-sm text-[#676a79] mt-1">
-          AbuseIPDB reputation lookups and high-risk target exposure.
+          Check an IP address for abuse reports and suspicious activity.
         </p>
       </div>
 
@@ -193,7 +193,7 @@ export default function ThreatIntelPage() {
         <div className="glass-panel p-5">
           <div className="flex items-center justify-between mb-4">
             <span className="font-mono text-[10px] font-semibold tracking-[0.25em] text-[#676a79]">
-              HIGHEST RISK TARGETS
+              HIGH-RISK OVERVIEW
             </span>
             <span className="font-mono text-[10px] text-[#676a79]">
               {topTargets.length} DOMAINS
@@ -228,13 +228,13 @@ export default function ThreatIntelPage() {
 
         <div className="glass-panel p-5">
           <span className="font-mono text-[10px] font-semibold tracking-[0.25em] text-[#676a79]">
-            WINDOW EXPOSURE
+            HIGH-RISK OVERVIEW
           </span>
           <div className="mt-4 flex items-end gap-2">
             <p className="font-mono text-5xl font-bold text-rose-400 text-glow-crimson">
               {highRiskPct}%
             </p>
-            <p className="text-sm text-[#676a79] mb-1.5">of requests high-risk</p>
+            <p className="text-sm text-[#676a79] mb-1.5">of requests flagged as risky</p>
           </div>
 
           <div className="mt-6">
@@ -252,9 +252,8 @@ export default function ThreatIntelPage() {
           </div>
 
           <p className="mt-6 text-xs text-[#676a79] leading-relaxed">
-            Risk is computed per request by the ML IsolationForest model using
-            inter-request timing deltas and AbuseIPDB reputation. Targets above
-            the 65% threshold are auto-throttled with an adaptive delay.
+            Risk is scored by the ML model based on request timing and abuse
+            reports. Requests above 65% are slowed down automatically.
           </p>
         </div>
       </div>

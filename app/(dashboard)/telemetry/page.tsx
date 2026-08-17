@@ -47,7 +47,7 @@ export default function TelemetryPage() {
           Telemetry
         </h1>
         <p className="text-sm text-[#676a79] mt-1">
-          Full request log with risk classification and throttle state.
+          All requests with risk levels and delay status.
         </p>
       </div>
 

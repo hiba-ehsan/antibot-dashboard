@@ -149,34 +149,34 @@ export default function OverviewPage() {
         <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <MetricTile
             index={1}
-            label="REQUESTS WINDOW"
+            label="RECENT REQUESTS"
             value={String(rows.length)}
-            sub="last 50 tracked"
+            sub="last 50 requests"
             icon={<Wifi className="w-4 h-4" />}
           />
           <MetricTile
             index={2}
             label="THROTTLED"
             value={String(throttled)}
-            sub="adaptive delays applied"
+            sub="requests with delays"
             accent="rgba(244,63,94,0.6)"
             icon={<ShieldAlert className="w-4 h-4" />}
           />
           <MetricTile
             index={3}
-            label="AVG DELTA"
+            label="AVG TIMING"
             value={String(avgDelay)}
             unit="ms"
-            sub="mean inter-request jitter"
+            sub="average gap between requests"
             accent="rgba(245,158,11,0.5)"
             icon={<Activity className="w-4 h-4" />}
           />
           <MetricTile
             index={4}
-            label="AVG OSINT SCORE"
+            label="ABUSE REPORTS"
             value={String(avgOsint)}
             unit="/100"
-            sub="abuseIPDB reputation"
+            sub="avg abuse score from AbuseIPDB"
             accent="rgba(16,185,129,0.5)"
             icon={<Crosshair className="w-4 h-4" />}
           />
@@ -213,7 +213,7 @@ export default function OverviewPage() {
       >
         <div className="flex items-center justify-between mb-4">
           <span className="font-mono text-[10px] font-semibold tracking-[0.25em] text-slate-400">
-            LIVE TELEMETRY STREAM
+            LIVE REQUEST LOG
           </span>
           <span className="text-[11px] font-mono text-slate-400">
             {rows.length > 0 ? `${rows.length} ROWS` : "0 ROWS"}

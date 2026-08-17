@@ -94,8 +94,8 @@ export default function AuthCard({ mode }: AuthCardProps) {
             </h1>
             <p className="text-sm text-[#676a79]">
               {isLogin
-                ? "Sign in to access the Anti-Bot Command Center"
-                : "Register to start monitoring bot risk"}
+                ? "Sign in to access the dashboard"
+                : "Create an account to start tracking bot activity"}
             </p>
           </motion.div>
 
