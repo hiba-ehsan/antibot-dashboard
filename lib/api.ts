@@ -1,8 +1,14 @@
 import { getAccessToken } from "./auth";
 
-const PROXY_API = (
-  process.env.NEXT_PUBLIC_PROXY_API_URL ?? "http://localhost:3001"
-).replace(/\/+$/, "");
+const PROXY_API = (() => {
+  const raw = process.env.NEXT_PUBLIC_PROXY_API_URL ?? "http://localhost:3001";
+  try {
+    const u = new URL(raw);
+    return u.origin;
+  } catch {
+    return raw.replace(/\/+$/, "");
+  }
+})();
 
 function redirectToLogin() {
   if (typeof window !== "undefined") {
