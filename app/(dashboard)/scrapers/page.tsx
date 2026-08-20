@@ -1,21 +1,25 @@
 ﻿"use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { runGoogleMaps, type GoogleMapsResult } from "@/lib/scrapers-api";
+import { listSessions, deleteSession, type ScraperSession } from "@/lib/scrapers";
 import { useScraperSocket, type ScraperProgress } from "@/lib/use-scraper-socket";
 import {
   MapPin,
   Loader2,
   Play,
-  Square,
   Star,
   Phone,
-  Globe,
   Clock,
   Search,
   Zap,
   RotateCcw,
+  Trash2,
+  History,
+  ChevronDown,
+  ChevronUp,
+  Globe,
 } from "lucide-react";
 
 export default function ScrapersPage() {
@@ -36,8 +40,6 @@ export default function ScrapersPage() {
   );
 }
 
-/* ─────────────────── GOOGLE MAPS SCRAPER ─────────────────── */
-
 function GoogleMapsScraper() {
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
@@ -48,11 +50,12 @@ function GoogleMapsScraper() {
   const [complete, setComplete] = useState<{ total: number; duration: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [telemetry, setTelemetry] = useState<any>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const [sessions, setSessions] = useState<ScraperSession[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const { connected, joinSession, onProgress, onResult, onComplete, onError } = useScraperSocket();
 
-  // Wire up socket listeners
   useEffect(() => {
     const cleanups = [
       onProgress((data) => setProgress(data)),
@@ -60,6 +63,7 @@ function GoogleMapsScraper() {
       onComplete((data) => {
         setComplete(data);
         setRunning(false);
+        loadSessions();
       }),
       onError((data) => {
         setError(data.message);
@@ -68,6 +72,16 @@ function GoogleMapsScraper() {
     ];
     return () => cleanups.forEach((fn) => fn());
   }, [onProgress, onResult, onComplete, onError]);
+
+  const loadSessions = () => {
+    listSessions()
+      .then((s) => setSessions(s.filter((x) => x.target_domain === "google.com/maps")))
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
 
   const handleRun = async () => {
     if (!query.trim() || !location.trim()) return;
@@ -78,15 +92,10 @@ function GoogleMapsScraper() {
     setComplete(null);
     setError(null);
     setTelemetry(null);
-    abortRef.current = new AbortController();
 
     try {
       const response = await runGoogleMaps(query.trim(), location.trim(), maxResults);
-
-      // Join the websocket room for live updates
       joinSession(response.sessionId);
-
-      // The HTTP response returns the final results too (in case websocket missed any)
       setResults(response.results);
       setTelemetry(response.telemetry);
       setComplete({ total: response.resultCount, duration: response.telemetry.delta_ms });
@@ -97,12 +106,15 @@ function GoogleMapsScraper() {
     }
   };
 
-  const handleReset = () => {
-    setResults([]);
-    setProgress(null);
-    setComplete(null);
-    setError(null);
-    setTelemetry(null);
+  const handleDelete = async (id: string) => {
+    setDeleting(id);
+    try {
+      await deleteSession(id);
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+    } catch {
+      // ignore
+    }
+    setDeleting(null);
   };
 
   return (
@@ -192,7 +204,7 @@ function GoogleMapsScraper() {
 
           {results.length > 0 && (
             <button
-              onClick={handleReset}
+              onClick={() => { setResults([]); setComplete(null); setProgress(null); setTelemetry(null); }}
               className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-[#2a2d33] text-[#676a79] hover:text-white text-sm transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -200,7 +212,6 @@ function GoogleMapsScraper() {
             </button>
           )}
 
-          {/* Live progress */}
           <AnimatePresence>
             {progress && running && (
               <motion.div
@@ -281,9 +292,7 @@ function GoogleMapsScraper() {
           className="glass-panel overflow-hidden"
         >
           <div className="px-5 py-3 border-b border-[#2a2d33] flex items-center justify-between">
-            <span className="font-mono text-[10px] tracking-[0.25em] text-[#676a79]">
-              RESULTS
-            </span>
+            <span className="font-mono text-[10px] tracking-[0.25em] text-[#676a79]">RESULTS</span>
             <span className="text-[11px] font-mono text-[#676a79]">{results.length} rows</span>
           </div>
           <div className="overflow-x-auto">
@@ -357,6 +366,64 @@ function GoogleMapsScraper() {
           </div>
         </motion.div>
       )}
+
+      {/* Session History */}
+      <div className="glass-panel">
+        <button
+          onClick={() => setHistoryOpen(!historyOpen)}
+          className="w-full px-5 py-3 flex items-center gap-2 text-left hover:bg-[#17191d]/50 transition-colors rounded-xl"
+        >
+          <History className="w-4 h-4 text-[#676a79]" />
+          <span className="font-mono text-[10px] tracking-[0.25em] text-[#676a79]">PAST RUNS</span>
+          <span className="font-mono text-[10px] text-[#676a79] ml-1">({sessions.length})</span>
+          <span className="ml-auto">
+            {historyOpen ? (
+              <ChevronUp className="w-4 h-4 text-[#676a79]" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-[#676a79]" />
+            )}
+          </span>
+        </button>
+
+        <AnimatePresence>
+          {historyOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              {sessions.length === 0 ? (
+                <div className="px-5 py-4 text-xs text-[#676a79]">No past runs yet.</div>
+              ) : (
+                <div className="border-t border-[#2a2d33]">
+                  {sessions.map((s) => (
+                    <div
+                      key={s.id}
+                      className="px-5 py-3 flex items-center gap-3 border-b border-[#2a2d33]/60 last:border-0 hover:bg-[#17191d]/30 transition-colors"
+                    >
+                      <MapPin className="w-3.5 h-3.5 text-[#676a79] shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-mono text-xs text-white truncate">{s.name}</div>
+                        <div className="font-mono text-[10px] text-[#676a79]">
+                          {new Date(s.created_at).toLocaleString()} · {s.request_count ?? 0} telemetry · {s.status}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDelete(s.id)}
+                        disabled={deleting === s.id}
+                        className="p-1.5 rounded-lg hover:bg-rose-500/10 text-[#676a79] hover:text-rose-400 transition-colors disabled:opacity-40"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
