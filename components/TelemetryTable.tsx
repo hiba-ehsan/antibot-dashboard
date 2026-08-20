@@ -76,14 +76,16 @@ export default function TelemetryTable({ rows }: TelemetryTableProps) {
               </tr>
             ) : (
               rows.map((row, idx) => {
-                const time = new Date(
-                  row.timestamp_epoch_ms,
-                ).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                  fractionalSecondDigits: 1,
-                });
+                const ts = typeof row.timestamp_epoch_ms === 'string'
+                  ? Number(row.timestamp_epoch_ms)
+                  : row.timestamp_epoch_ms;
+                const time = ts
+                  ? new Date(ts).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })
+                  : "—";
                 return (
                   <motion.tr
                     key={row.id}
@@ -105,8 +107,14 @@ export default function TelemetryTable({ rows }: TelemetryTableProps) {
                       {hostOnly(row.target_url)}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-white">
-                      {row.delta_ms}
-                      <span className="text-slate-500 ml-0.5">ms</span>
+                      {row.delta_ms === 0 ? (
+                        <span className="text-slate-500">first</span>
+                      ) : (
+                        <>
+                          {row.delta_ms}
+                          <span className="text-slate-500 ml-0.5">ms</span>
+                        </>
+                      )}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-slate-400">
                       {Math.round(row.proxy_abuse_score)}
